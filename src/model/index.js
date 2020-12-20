@@ -1,22 +1,14 @@
 import * as THREE from "three";
 
 require("three-instanced-mesh")(THREE);
-import * as $ from 'jquery';
-import merge from 'deepmerge'
-import Render, { defaultOptions, deepDisposeMesh, mergeCubeMeshes } from "../renderBase";
-import { loadTextureAsBase64, scaleUv, DEFAULT_ROOT, loadJsonFromPath, loadBlockState, loadTextureMeta } from "../functions";
+import Render, { deepDisposeMesh, mergeCubeMeshes } from "../renderBase";
+import { scaleUv, DEFAULT_ROOT,  loadTextureMeta } from "../functions";
 import ModelConverter from "./modelConverter";
 import * as md5 from "md5";
 
-import { parseModel, loadAndMergeModel, loadModelTexture, modelCacheKey, toRadians, deleteObjectProperties, loadTextures } from "./modelFunctions";
+import { parseModel, loadAndMergeModel, modelCacheKey, toRadians, deleteObjectProperties, loadTextures } from "./modelFunctions";
 
-import work from 'webworkify-webpack';
-import SkinRender from "../skin";
-import off from "onscreen/lib/methods/off";
-
-const ModelWorker = require.resolve("./ModelWorker.js");
-
-
+console.warn(`String.prototype.replaceAll is assigned! This global override should be deleted.`);
 String.prototype.replaceAll = function (search, replacement) {
     let target = this;
     return target.replace(new RegExp(search, 'g'), replacement);
@@ -106,6 +98,7 @@ class ModelRender extends Render {
      * @param {function} [cb] Callback when rendering finished
      */
     render(models, cb) {
+        console.log({ models, cb });
         let modelRender = this;
 
         if (!modelRender.attached && !modelRender._scene) {// Don't init scene if attached, since we already have an available scene
@@ -121,22 +114,21 @@ class ModelRender extends Render {
             console.log("[ModelRender] is attached - skipping scene init");
         }
 
-        let parsedModelList = [];
-
-        parseModels(modelRender, models, parsedModelList)
-            .then(() => loadAndMergeModels(modelRender, parsedModelList))
-            .then(() => loadModelTextures(modelRender, parsedModelList))
-            .then(() => doModelRender(modelRender, parsedModelList))
-            .then((renderedModels) => {
-                console.timeEnd("doModelRender");
-                console.debug(renderedModels)
-                if (typeof cb === "function") cb();
-            })
+        renderToMesh(modelRender, models)
+            .then(() => { if (typeof cb === "function") cb(); });
 
     }
 
 }
 
+function renderToMesh(modelRender, models) {
+    let parsedModelList = [];
+
+    parseModels(modelRender, models, parsedModelList)
+        .then(() => loadAndMergeModels(modelRender, parsedModelList))
+        .then(() => loadModelTextures(modelRender, parsedModelList))
+        .then(() => doModelRender(modelRender, parsedModelList));
+}
 
 function parseModels(modelRender, models, parsedModelList) {
     console.time("parseModels");
@@ -145,28 +137,7 @@ function parseModels(modelRender, models, parsedModelList) {
     for (let i = 0; i < models.length; i++) {
         let model = models[i];
 
-        // parsePromises.push(parseModel(model, model, parsedModelList, modelRender.options.assetRoot))
-        parsePromises.push(new Promise(resolve => {
-            if (modelRender.options.useWebWorkers) {
-                let w = work(ModelWorker);
-                w.addEventListener('message', event => {
-                    parsedModelList.push(...event.data.parsedModelList);
-                    resolve();
-                });
-                w.postMessage({
-                    func: "parseModel",
-                    model: model,
-                    modelOptions: model,
-                    parsedModelList: parsedModelList,
-                    assetRoot: modelRender.options.assetRoot
-                })
-            } else {
-                parseModel(model, model, parsedModelList, modelRender.options.assetRoot).then(() => {
-                    resolve();
-                })
-            }
-        }))
-
+        parsePromises.push(parseModel(model, model, parsedModelList, modelRender.options.assetRoot))
     }
 
     return Promise.all(parsePromises);
@@ -200,23 +171,10 @@ function loadAndMergeModels(modelRender, parsedModelList) {
                 return;
             }
 
-            if (modelRender.options.useWebWorkers) {
-                let w = work(ModelWorker);
-                w.addEventListener('message', event => {
-                    mergedModelCache[cacheKey] = event.data.mergedModel;
-                    resolve();
-                });
-                w.postMessage({
-                    func: "loadAndMergeModel",
-                    model: model,
-                    assetRoot: modelRender.options.assetRoot
-                });
-            } else {
-                loadAndMergeModel(model, modelRender.options.assetRoot).then((mergedModel) => {
-                    mergedModelCache[cacheKey] = mergedModel;
-                    resolve();
-                })
-            }
+            loadAndMergeModel(model, modelRender.options.assetRoot).then((mergedModel) => {
+                mergedModelCache[cacheKey] = mergedModel;
+                resolve();
+            })
         }))
     }
 
@@ -263,23 +221,10 @@ function loadModelTextures(modelRender, parsedModelList) {
                 return;
             }
 
-            if (modelRender.options.useWebWorkers) {
-                let w = work(ModelWorker);
-                w.addEventListener('message', event => {
-                    loadedTextureCache[cacheKey] = event.data.textures;
-                    resolve();
-                });
-                w.postMessage({
-                    func: "loadTextures",
-                    textures: mergedModel.textures,
-                    assetRoot: modelRender.options.assetRoot
-                });
-            } else {
-                loadTextures(mergedModel.textures, modelRender.options.assetRoot).then((textures) => {
-                    loadedTextureCache[cacheKey] = textures;
-                    resolve();
-                })
-            }
+            loadTextures(mergedModel.textures, modelRender.options.assetRoot).then((textures) => {
+                loadedTextureCache[cacheKey] = textures;
+                resolve();
+            })
         }))
     }
 
@@ -380,66 +325,6 @@ let renderModel = function (modelRender, model, textures, textureNames, type, na
 
                 mesh.needsUpdate();
 
-                // mesh.position = _v3o;
-                // Object.defineProperty(mesh.position,"x",{
-                //     get:function () {
-                //         return this._x||0;
-                //     },
-                //     set:function (x) {
-                //         this._x=x;
-                //         mesh.setPositionAt(instanceIndex, _v3o.set(x, this.y, this.z));
-                //     }
-                // });
-                // Object.defineProperty(mesh.position,"y",{
-                //     get:function () {
-                //         return this._y||0;
-                //     },
-                //     set:function (y) {
-                //         this._y=y;
-                //         mesh.setPositionAt(instanceIndex, _v3o.set(this.x, y, this.z));
-                //     }
-                // });
-                // Object.defineProperty(mesh.position,"z",{
-                //     get:function () {
-                //         return this._z||0;
-                //     },
-                //     set:function (z) {
-                //         this._z=z;
-                //         mesh.setPositionAt(instanceIndex, _v3o.set(this.x, this.y, z));
-                //     }
-                // })
-                //
-                // mesh.rotation = new THREE.Euler(toRadians(rotation[0]), toRadians(Math.abs(rotation[0]) > 0 ? rotation[1] : -rotation[1]), toRadians(rotation[2]));
-                // Object.defineProperty(mesh.rotation,"x",{
-                //     get:function () {
-                //         return this._x||0;
-                //     },
-                //     set:function (x) {
-                //         this._x=x;
-                //         mesh.setQuaternionAt(instanceIndex, _q.setFromEuler(new THREE.Euler(toRadians(x), toRadians(this.y), toRadians(this.z))));
-                //     }
-                // });
-                // Object.defineProperty(mesh.rotation,"y",{
-                //     get:function () {
-                //         return this._y||0;
-                //     },
-                //     set:function (y) {
-                //         this._y=y;
-                //         mesh.setQuaternionAt(instanceIndex, _q.setFromEuler(new THREE.Euler(toRadians(this.x), toRadians(y), toRadians(this.z))));
-                //     }
-                // });
-                // Object.defineProperty(mesh.rotation,"z",{
-                //     get:function () {
-                //         return this._z||0;
-                //     },
-                //     set:function (z) {
-                //         this._z=z;
-                //         mesh.setQuaternionAt(instanceIndex, _q.setFromEuler(new THREE.Euler(toRadians(this.x), toRadians(this.y), toRadians(z))));
-                //     }
-                // });
-                //
-                // mesh.scale = _v3s;
-
                 resolve({
                     mesh: mesh,
                     firstInstance: instanceIndex === 0
@@ -448,7 +333,6 @@ let renderModel = function (modelRender, model, textures, textureNames, type, na
 
             let finalizeCubeModel = function (geometry, materials) {
                 geometry.translate(-8, -8, -8);
-
 
                 let cachedInstance;
 
@@ -1115,6 +999,8 @@ ModelRender.cache = {
     }
 };
 ModelRender.ModelConverter = ModelConverter;
+
+ModelRender.renderToMesh = renderToMesh;
 
 if (typeof window !== "undefined") {
     window.ModelRender = ModelRender;

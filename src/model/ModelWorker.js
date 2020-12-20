@@ -1,4 +1,4 @@
-import { parseModel, loadAndMergeModel,  modelCacheKey, loadTextures } from "./modelFunctions";
+import { parseModel, loadAndMergeModel, loadTextures } from "./modelFunctions";
 
 export default function worker(self) {
     console.debug("New Worker!")

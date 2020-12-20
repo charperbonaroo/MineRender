@@ -1,6 +1,6 @@
 {
-  "name": "minerender",
-  "version": "1.4.6",
+  "name": "bonaroo-minerender",
+  "version": "1.5.0",
   "description": "",
   "main": "src/combined/index.js",
   "scripts": {
@@ -9,13 +9,13 @@
     "build:silent": "webpack",
     "docs": "./node_modules/.bin/esdoc"
   },
-  "author": "Haylee Schäfer",
+  "author": "Toby Hinloopen",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/InventivetalentDev/MineRender.git"
+    "url": "https://github.com/charperbonaroo/MineRender.git"
   },
-  "homepage": "https://minerender.org",
+  "homepage": "https://github.com/charperbonaroo/MineRender",
   "dependencies": {
     "@johh/three-effectcomposer": "0.0.7",
     "deepmerge": "^4.0.0",
