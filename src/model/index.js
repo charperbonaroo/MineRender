@@ -124,7 +124,7 @@ class ModelRender extends Render {
 function renderToMesh(modelRender, models) {
     let parsedModelList = [];
 
-    parseModels(modelRender, models, parsedModelList)
+    return parseModels(modelRender, models, parsedModelList)
         .then(() => loadAndMergeModels(modelRender, parsedModelList))
         .then(() => loadModelTextures(modelRender, parsedModelList))
         .then(() => doModelRender(modelRender, parsedModelList));
