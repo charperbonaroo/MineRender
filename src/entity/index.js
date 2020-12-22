@@ -190,14 +190,14 @@ let createCube = function (width, height, depth, name, uv, color, texture, mirro
     let geometry = new THREE.BoxGeometry(width, height, depth);
     let material;
     if (texture) {
-        material = new THREE.MeshBasicMaterial({
+        material = new THREE.MeshStandardMaterial({
             map: texture,
             side: THREE.DoubleSide,
             transparent: true,
             alphaTest: 0.5
         });
     } else {
-        material = new THREE.MeshBasicMaterial({
+        material = new THREE.MeshStandardMaterial({
             color: color,
             wireframe: true
         });

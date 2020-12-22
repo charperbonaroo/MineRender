@@ -571,7 +571,7 @@ let createPlane = function (name, textures) {
                 }
 
                 let textureLoaded = function (texture) {
-                    let material = new THREE.MeshBasicMaterial({
+                    let material = new THREE.MeshStandardMaterial({
                         map: texture,
                         transparent: true,
                         side: THREE.DoubleSide,
@@ -745,7 +745,7 @@ let createCube = function (width, height, depth, name, faces, fallbackFaces, tex
                                 n = textureNames[name.substr(1)];
                             }
                             console.debug("Pre-Caching Material " + hash + ", without meta");
-                            materialCache[hash] = new THREE.MeshBasicMaterial({
+                            materialCache[hash] = new THREE.MeshStandardMaterial({
                                 map: null,
                                 transparent: hasTransparency,
                                 side: hasTransparency ? THREE.DoubleSide : THREE.FrontSide,
@@ -800,7 +800,7 @@ let createCube = function (width, height, depth, name, faces, fallbackFaces, tex
                             }
 
                             console.debug("Pre-Caching Material " + hash + ", with meta");
-                            materialCache[hash] = new THREE.MeshBasicMaterial({
+                            materialCache[hash] = new THREE.MeshStandardMaterial({
                                 map: null,
                                 transparent: hasTransparency,
                                 side: hasTransparency ? THREE.DoubleSide : THREE.FrontSide,
@@ -939,7 +939,7 @@ let createCube = function (width, height, depth, name, faces, fallbackFaces, tex
         } else {
             let materials = [];
             for (let i = 0; i < 6; i++) {
-                materials.push(new THREE.MeshBasicMaterial({
+                materials.push(new THREE.MeshStandardMaterial({
                     color: colors[i + 2],
                     wireframe: true
                 }))

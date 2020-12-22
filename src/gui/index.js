@@ -91,7 +91,7 @@ class GuiRender extends Render {
                             texture.anisotropy = 0;
                             texture.needsUpdate = true;
 
-                            let material = new THREE.MeshBasicMaterial({
+                            let material = new THREE.MeshStandardMaterial({
                                 map: texture,
                                 transparent: true,
                                 side: THREE.DoubleSide,
